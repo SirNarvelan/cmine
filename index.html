@@ -4,7 +4,13 @@
 	<meta charset="utf-8">
 	<title>Contribution finder by Cmine</title>
 	<style>
-		body {margin: 0;background: #1f1f1f;}
+		body {
+			margin: 0;
+			background: #1f1f1f;
+			color: white;
+			font-family: Segoe, "Segoe UI", "DejaVu Sans", "Trebuchet MS", Verdana, "sans-serif";
+			font-weight: 600;
+		}
 		.center {
 			max-width: 500px;
 			margin: 0 auto;
@@ -15,17 +21,168 @@
 			background-color: #2e2e2e;
 		}
 		.body {
-			height: 100%;
+			height: 100%;			
 		}
-	</style>	
+		.data { height: 25px; padding: 10px; }
+		.info1, .info2, .info3, .info4 { float: left; padding-right: 10px; }
+		#landid { width: 60px; }
+		#continent { width: 20px; }			
+		#date { width: 74px; }	
+		
+		.result1 {
+			background-color: #053900;
+			padding: 5px;
+			width: 250px;
+		}
+		.result2 {
+			background-color: #5A0001;
+			padding: 5px;
+			width: 225px;
+		}
+		.hide {
+			display: none;
+		}		
+	</style>
+	<script src="http://code.jquery.com/jquery-1.7.1.js"></script>
+	<script src="https://momentjs.com/downloads/moment.js"></script>
 </head>
 
 <body>
 	
 	<div class="center">
 		<div class="header"></div>
-		<div class="body">Teste</div>
+		<div class="body">
+			<div class="data">
+				<div class="info1">
+					<label for="landid">Land ID:</label>
+					<input type="text" id="landid" name="landid"></div>				
+				<div class="info2">
+					<label for="continent">Continent:</label>
+					<input type="text" id="continent" value="44" name="continent">
+				</div>
+				<div class="info3">
+					<label for="date">From:</label>
+					<input type="text" id="date" value="" name="date">
+				</div>
+				<div class="info4">
+					<button type="button" onclick="functionSearch()">Search!</button>
+				</div>
+			</div>
+			<div class="result hide" id="result">
+				<div class="data1">
+					<div class="info1 result1">Kingdom Name</div>
+					<div class="info2 result2">Contribution Total</div>			
+				</div>				
+			</div>
+		</div>
 	</div>
-	
+	<script>
+		var today = new Date();
+		var dd = String(today.getDate()).padStart(2, '0');
+		var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+		var yyyy = today.getFullYear();
+		var from = yyyy+'-'+mm+'-'+dd;
+		document.getElementById("date").value = from;		
+		
+		function functionSearch () {		
+		var date = document.getElementById("date").value;			
+		if ( moment(date, 'YYYY-MM-DD',true).isValid() ) {
+			from = date;
+		}else{
+			var today = new Date();
+			var dd = String(today.getDate()).padStart(2, '0');
+			var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+			var yyyy = today.getFullYear();
+			var from = yyyy+'-'+mm+'-'+dd;
+			date.value = from;
+		}
+			
+		var landID = document.getElementById("landid").value;
+		var continent = document.getElementById("continent").value;
+		
+		
+		if ( landID ) {
+		if ( continent ) {				
+		var url = 'https://api-lok-live.leagueofkingdoms.com/api/stat/land/contribution?landId='+landID+'&from='+from;		
+		const request = new XMLHttpRequest();
+			
+		var msgHead = 'LandID: '+landID+' - Continent: '+continent +' - Date: '+from;
+		var msgBody = '';
+		var msgFooter = '\nLink: ' + url;
+			
+		try {	
+		  request.open('GET', url);
+
+		  request.responseType = 'json';  
+		  request.addEventListener('load', () => initialize(request.response));  
+		  request.addEventListener('error', () => console.error('XHR error'));
+
+		  request.send();
+
+		} catch (error) {
+			console.error(`XHR error ${request.status}`);
+			message.reply('An error has occurred! Check the land and continent, For example LandID and Continent: !land 123456 44');
+		}
+
+		function initialize(request) {
+		// console.log(request);
+		  var arrayTest = request;
+		  var a, b, c = 0;
+			for (a in arrayTest) {		
+				// console.log(arrayTest[a]);
+				var arrayTest2 = arrayTest[a];
+				var resultDiv = document.getElementById("result");
+				
+				var divdata2 = document.getElementById("data2");
+				//If it isn't "undefined" and it isn't "null", then it exists.
+				if(typeof(divdata2) != 'undefined' && divdata2 != null){
+					divdata2.innerHTML = '';					
+				}else {
+					divdata2 = document.createElement("div");
+					divdata2.id = "data2";
+					divdata2.classList.add('data2');
+				}				
+				
+				for (b in arrayTest2) {
+					if (arrayTest2[b].continent == continent) {						
+						// msgBody = msgBody+'\nKingdom: '+arrayTest2[b].name +' (Id: '+arrayTest2[b].kingdomId+')' + " - Total: " + arrayTest2[b].total;
+						c = 1;						
+						
+						var divKingdom = document.createElement("div");
+						// var textKingdom = document.createTextNode("Kingdom: "+arrayTest2[b].name +' (Id: '+arrayTest2[b].kingdomId+')');
+						var textKingdom = document.createTextNode(arrayTest2[b].name);
+						divKingdom.appendChild(textKingdom);
+						divKingdom.classList.add('info1');
+						divKingdom.classList.add('result1');
+						
+						var divTotal = document.createElement("div");
+						var textTotal = document.createTextNode(arrayTest2[b].total);
+						divTotal.appendChild(textTotal);
+						divTotal.classList.add('info2');
+						divTotal.classList.add('result2');						
+						
+						divdata2.appendChild(divKingdom);
+						divdata2.appendChild(divTotal);						
+					}
+			  }
+			}
+			
+			resultDiv.appendChild(divdata2);
+			
+			if (c == 0) {
+				alert('No kingdoms were found in this land.');
+				resultDiv.classList.add('hide');				
+			}else{
+				resultDiv.classList.remove('hide');
+			}
+		}
+	} else {
+		alert('Continent was not specified.');
+	}
+	} else {
+		alert('LandID was not specified.');
+	}
+	}
+	</script>
 </body>
 </html>
